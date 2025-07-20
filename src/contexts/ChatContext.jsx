@@ -1,3 +1,4 @@
+// src/contexts/ChatContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   collection, 
@@ -6,6 +7,7 @@ import {
   onSnapshot,
   addDoc,
   updateDoc,
+  deleteDoc,
   doc,
   serverTimestamp,
   where,
@@ -32,6 +34,7 @@ export const ChatProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState(null);
 
   // Fetch all users
   useEffect(() => {
@@ -41,18 +44,30 @@ export const ChatProvider = ({ children }) => {
       return;
     }
 
+    console.log('Fetching users for chat...');
+    setUsersLoading(true);
+    setUsersError(null);
+
     const usersQuery = query(collection(db, 'users'));
     const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+      console.log('Users snapshot received, docs:', snapshot.docs.length);
+      
       const allUsers = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })).filter(u => u.uid !== user.uid);
       
+      console.log('Filtered users (excluding self):', allUsers.length);
       setUsers(allUsers);
       setUsersLoading(false);
     }, (error) => {
       console.error('Error fetching users:', error);
+      setUsersError(error.message);
       setUsersLoading(false);
+      
+      if (error.code === 'permission-denied') {
+        console.error('Permission denied - check Firestore security rules');
+      }
     });
 
     return unsubscribe;
@@ -117,7 +132,8 @@ export const ChatProvider = ({ children }) => {
       senderName: user.displayName,
       senderPhoto: user.photoURL || '',
       timestamp: serverTimestamp(),
-      status: 'sent'
+      status: 'sent',
+      isDeleted: false
     };
 
     try {
@@ -133,6 +149,64 @@ export const ChatProvider = ({ children }) => {
       });
     } catch (error) {
       console.error('Error sending message:', error);
+      throw error;
+    }
+  };
+
+  const deleteMessage = async (messageId) => {
+    if (!user || !activeConversation) return;
+
+    try {
+      const messageRef = doc(db, 'conversations', activeConversation.id, 'messages', messageId);
+      
+      // Mark message as deleted instead of actually deleting it
+      await updateDoc(messageRef, {
+        isDeleted: true,
+        deletedAt: serverTimestamp(),
+        deletedBy: user.uid,
+        originalText: messages.find(m => m.id === messageId)?.text || '',
+        text: ''
+      });
+
+      // Update last message if this was the latest one
+      const latestMessage = messages[messages.length - 1];
+      if (latestMessage?.id === messageId) {
+        // Find the previous non-deleted message
+        const previousMessage = messages
+          .slice(0, -1)
+          .reverse()
+          .find(msg => !msg.isDeleted);
+
+        if (previousMessage) {
+          await updateDoc(doc(db, 'conversations', activeConversation.id), {
+            lastMessage: previousMessage.text,
+            lastMessageTime: previousMessage.timestamp,
+            lastMessageSender: previousMessage.senderId
+          });
+        } else {
+          await updateDoc(doc(db, 'conversations', activeConversation.id), {
+            lastMessage: '',
+            lastMessageTime: serverTimestamp(),
+            lastMessageSender: user.uid
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      throw error;
+    }
+  };
+
+  const permanentlyDeleteMessage = async (messageId) => {
+    if (!user || !activeConversation) return;
+
+    try {
+      const messageRef = doc(db, 'conversations', activeConversation.id, 'messages', messageId);
+      await deleteDoc(messageRef);
+    } catch (error) {
+      console.error('Error permanently deleting message:', error);
+      throw error;
     }
   };
 
@@ -179,18 +253,38 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  // Mark messages as read
+  const markMessagesAsRead = async (conversationId) => {
+    if (!user || !conversationId) return;
+
+    try {
+      // This could be expanded to mark individual messages as read
+      // For now, we'll just update conversation level read status
+      const conversationRef = doc(db, 'conversations', conversationId);
+      await updateDoc(conversationRef, {
+        [`readBy.${user.uid}`]: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
   const value = {
     conversations,
     messages,
     activeConversation,
     users,
     usersLoading,
+    usersError,
     loading,
     sendMessage,
+    deleteMessage,
+    permanentlyDeleteMessage,
     startConversation,
-    setActiveConversation
+    setActiveConversation,
+    markMessagesAsRead
   };
-
+ 
   return (
     <ChatContext.Provider value={value}>
       {children}

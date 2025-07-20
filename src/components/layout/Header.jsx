@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Navbar, Nav, Dropdown } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
 import ProfileModal from '../profile/ProfileModal';
+import ProfileImage from '../profile/ProfileImage';
 
 const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
@@ -43,10 +44,12 @@ const Header = ({ onMenuClick }) => {
                   className="dropdown-toggle"
                   style={{ cursor: 'pointer' }}
                 >
-                  <img
-                    src={user?.photoURL || 'https://via.placeholder.com/32'}
-                    alt={user?.displayName}
-                    className="user-avatar"
+                  <ProfileImage 
+                    src={user?.photoURL} 
+                    name={user?.displayName}
+                    size={32} 
+                    className="user-avatar me-2"
+                    showInitials={true}
                   />
                   <span className="user-name">{user?.displayName}</span>
                   <i className="bi bi-chevron-down ms-1"></i>
@@ -56,6 +59,10 @@ const Header = ({ onMenuClick }) => {
                   <Dropdown.Item onClick={() => setShowProfile(true)}>
                     <i className="bi bi-person me-2"></i>
                     Profile
+                  </Dropdown.Item>
+                  <Dropdown.Item>
+                    <i className="bi bi-gear me-2"></i>
+                    Settings
                   </Dropdown.Item>
                   <Dropdown.Divider />
                   <Dropdown.Item onClick={handleLogout}>
