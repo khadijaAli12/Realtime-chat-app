@@ -1,12 +1,45 @@
-# React + Vite
+# Eloquent
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Eloquent is a **real-time chat application** built with **React, Firebase, Vite, and Bootstrap**, designed for seamless, instant messaging with a clean and scalable architecture.
 
-Currently, two official plugins are available:
+![Eloquent Screenshot](./screenshot.png) <!-- Replace with your deployed app screenshot -->
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## 🚀 Features
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+✅ **User Authentication** (Firebase Auth)  
+✅ **Real-Time Messaging** (Firestore real-time listeners)  
+✅ **Responsive UI** (Bootstrap + React)  
+✅ **Read Receipts** (optional)  
+✅ **Firestore Security Rules** for authenticated access  
+✅ **Clean, scalable folder structure**  
+✅ **Deployed on Vercel**
+
+---
+
+## 🛠️ Tech Stack
+
+- **React** – frontend library for UI and state management
+- **Vite** – fast development bundler for React
+- **Firebase** – authentication & Firestore real-time database
+- **Bootstrap** – for responsive, clean UI components
+
+---
+
+## 📸 Screenshots
+
+> Add screenshots of your app here (Login page, Chat interface, Mobile view)
+
+---
+
+## 🌐 Live Demo
+
+Check out the live deployed app here:
+
+**[👉 Eloquent Live](https://your-deployed-url.vercel.app)**
+
+---
+
+## 🗂️ Folder Structure
+
