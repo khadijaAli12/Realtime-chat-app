@@ -1,4 +1,3 @@
-// src/components/auth/Login.jsx
 import React, { useState } from 'react';
 import { Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
@@ -49,7 +48,7 @@ const Login = () => {
 
   return (
     <>
-      {error && <Alert variant="danger">{error}</Alert>}
+      {error && <Alert variant="danger" className="mb-3">{error}</Alert>}
       
       <Form onSubmit={handleSubmit}>
         <Form.Group className="mb-3">
@@ -60,6 +59,7 @@ const Login = () => {
             value={formData.email}
             onChange={handleChange}
             required
+            className="form-input"
           />
         </Form.Group>
 
@@ -71,27 +71,30 @@ const Login = () => {
             value={formData.password}
             onChange={handleChange}
             required
+            className="form-input"
           />
         </Form.Group>
 
         <Button 
           variant="primary" 
           type="submit" 
-          className="w-100 mb-2"
+          className="w-100 mb-3 auth-btn"
           disabled={loading}
         >
-          {loading ? <Spinner size="sm" /> : 'Login'}
+          {loading ? <Spinner size="sm" className="me-2" /> : null}
+          Login
         </Button>
       </Form>
 
-      <hr />
+      <hr className="my-3" />
 
       <Button 
         variant="outline-primary" 
-        className="w-100"
+        className="w-100 google-btn"
         onClick={handleGoogleSignIn}
         disabled={loading}
       >
+        <i className="bi bi-google me-2"></i>
         Sign in with Google
       </Button>
     </>

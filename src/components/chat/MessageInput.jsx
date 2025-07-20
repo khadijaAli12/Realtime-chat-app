@@ -1,6 +1,4 @@
-// src/components/chat/MessageInput.jsx
 import React, { useState } from 'react';
-import { Form, Button, InputGroup } from 'react-bootstrap';
 
 const MessageInput = ({ onSendMessage, disabled = false }) => {
   const [message, setMessage] = useState('');
@@ -21,25 +19,24 @@ const MessageInput = ({ onSendMessage, disabled = false }) => {
   };
 
   return (
-    <Form onSubmit={handleSubmit}>
-      <InputGroup>
-        <Form.Control
-          type="text"
-          placeholder="Type a message..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={disabled}
-        />
-        <Button 
-          type="submit" 
-          variant="primary"
-          disabled={!message.trim() || disabled}
-        >
-          Send
-        </Button>
-      </InputGroup>
-    </Form>
+    <div className="input-wrapper">
+      <textarea
+        className="message-input"
+        placeholder="Type a message..."
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        onKeyPress={handleKeyPress}
+        disabled={disabled}
+        rows={1}
+      />
+      <button 
+        className="send-btn"
+        onClick={handleSubmit}
+        disabled={!message.trim() || disabled}
+      >
+        <i className="bi bi-send-fill"></i>
+      </button>
+    </div>
   );
 };
 

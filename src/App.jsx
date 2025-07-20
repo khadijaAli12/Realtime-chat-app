@@ -1,4 +1,3 @@
-// src/App.jsx
 import React from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';

@@ -1,10 +1,9 @@
-// src/components/layout/Header.jsx
 import React, { useState } from 'react';
-import { Navbar, Nav, Container, Dropdown, Modal, Button } from 'react-bootstrap';
+import { Navbar, Nav, Dropdown } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
 import ProfileModal from '../profile/ProfileModal';
 
-const Header = () => {
+const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
 
@@ -18,43 +17,57 @@ const Header = () => {
 
   return (
     <>
-      <Navbar bg="primary" variant="dark" expand="lg" className="shadow-sm">
-        <Container fluid>
-          <Navbar.Brand href="#" className="fw-bold">
-            ChatApp
-          </Navbar.Brand>
+      <div className="modern-header">
+        <Navbar expand="lg">
+          <div className="d-flex align-items-center">
+            <button 
+              className="btn btn-link d-lg-none text-white me-2 p-0 mobile-menu-btn"
+              onClick={onMenuClick}
+            >
+              <i className="bi bi-list fs-4"></i>
+            </button>
+            
+            <Navbar.Brand href="#" className="text-white d-flex align-items-center">
+              <div className="brand-icon">
+                <i className="bi bi-chat-dots-fill"></i>
+              </div>
+              <span>ChatApp</span>
+            </Navbar.Brand>
+          </div>
           
           <Nav className="ms-auto">
-            <Dropdown align="end">
-              <Dropdown.Toggle 
-                variant="outline-light" 
-                id="user-dropdown"
-                className="d-flex align-items-center border-0"
-              >
-                <img
-                  src={user?.photoURL || '/default-avatar.png'}
-                  alt={user?.displayName}
-                  className="rounded-circle me-2"
-                  width={32}
-                  height={32}
-                  style={{ objectFit: 'cover' }}
-                />
-                <span className="d-none d-md-inline">{user?.displayName}</span>
-              </Dropdown.Toggle>
+            <div className="user-menu">
+              <Dropdown align="end">
+                <Dropdown.Toggle 
+                  as="div"
+                  className="dropdown-toggle"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <img
+                    src={user?.photoURL || 'https://via.placeholder.com/32'}
+                    alt={user?.displayName}
+                    className="user-avatar"
+                  />
+                  <span className="user-name">{user?.displayName}</span>
+                  <i className="bi bi-chevron-down ms-1"></i>
+                </Dropdown.Toggle>
 
-              <Dropdown.Menu>
-                <Dropdown.Item onClick={() => setShowProfile(true)}>
-                  Profile
-                </Dropdown.Item>
-                <Dropdown.Divider />
-                <Dropdown.Item onClick={handleLogout}>
-                  Logout
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
+                <Dropdown.Menu>
+                  <Dropdown.Item onClick={() => setShowProfile(true)}>
+                    <i className="bi bi-person me-2"></i>
+                    Profile
+                  </Dropdown.Item>
+                  <Dropdown.Divider />
+                  <Dropdown.Item onClick={handleLogout}>
+                    <i className="bi bi-box-arrow-right me-2"></i>
+                    Logout
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            </div>
           </Nav>
-        </Container>
-      </Navbar>
+        </Navbar>
+      </div>
 
       <ProfileModal 
         show={showProfile} 

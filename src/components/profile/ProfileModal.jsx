@@ -1,6 +1,5 @@
-// src/components/profile/ProfileModal.jsx
 import React, { useState } from 'react';
-import { Modal, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import { Modal, Form, Button, Alert } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -31,12 +30,10 @@ const ProfileModal = ({ show, onHide }) => {
     setLoading(true);
 
     try {
-      // Update Firebase Auth profile
       await updateProfile(user, {
         displayName: formData.displayName
       });
 
-      // Update Firestore user document
       await updateDoc(doc(db, 'users', user.uid), {
         displayName: formData.displayName
       });
@@ -66,7 +63,7 @@ const ProfileModal = ({ show, onHide }) => {
         <Form onSubmit={handleSubmit}>
           <div className="text-center mb-3">
             <img
-              src={user?.photoURL || '/default-avatar.png'}
+              src={user?.photoURL || 'https://via.placeholder.com/80'}
               alt={user?.displayName}
               className="rounded-circle"
               width={80}
@@ -109,7 +106,7 @@ const ProfileModal = ({ show, onHide }) => {
               type="submit"
               disabled={loading}
             >
-              {loading ? <Spinner size="sm" /> : 'Save Changes'}
+              {loading ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </Form>

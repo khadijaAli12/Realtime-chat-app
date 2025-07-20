@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   onAuthStateChanged, 
@@ -26,15 +25,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Sign up with email and password
   const signup = async (email, password, displayName) => {
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Update profile with display name
       await updateProfile(user, { displayName });
       
-      // Create user document in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: user.email,
@@ -51,12 +47,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login with email and password
   const login = async (email, password) => {
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       
-      // Update online status
       await setDoc(doc(db, 'users', user.uid), {
         isOnline: true,
         lastSeen: new Date()
@@ -68,17 +62,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Google Sign In
   const googleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
       const { user } = await signInWithPopup(auth, provider);
       
-      // Check if user document exists
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       
       if (!userDoc.exists()) {
-        // Create new user document
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
           email: user.email,
@@ -89,7 +80,6 @@ export const AuthProvider = ({ children }) => {
           createdAt: new Date()
         });
       } else {
-        // Update online status
         await setDoc(doc(db, 'users', user.uid), {
           isOnline: true,
           lastSeen: new Date()
@@ -102,11 +92,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout
   const logout = async () => {
     try {
       if (user) {
-        // Update offline status
         await setDoc(doc(db, 'users', user.uid), {
           isOnline: false,
           lastSeen: new Date()
@@ -122,7 +110,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Get additional user data from Firestore
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         const userData = userDoc.exists() ? userDoc.data() : {};
         

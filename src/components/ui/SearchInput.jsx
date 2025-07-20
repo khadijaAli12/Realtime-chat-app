@@ -1,6 +1,4 @@
-// src/components/ui/SearchInput.jsx
 import React from 'react';
-import { Form, InputGroup } from 'react-bootstrap';
 
 const SearchInput = ({ 
   placeholder = 'Search...', 
@@ -9,19 +7,16 @@ const SearchInput = ({
   className = '' 
 }) => {
   return (
-    <InputGroup className={`mb-3 ${className}`}>
-      <InputGroup.Text className="bg-light border-end-0">
-        <i className="bi bi-search text-muted"></i>
-      </InputGroup.Text>
-      <Form.Control
+    <div className={`search-wrapper ${className}`}>
+      <i className="bi bi-search search-icon"></i>
+      <input
         type="text"
+        className="search-input"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="border-start-0 ps-0"
-        style={{ fontSize: '0.9rem' }}
       />
-    </InputGroup>
+    </div>
   );
 };
 

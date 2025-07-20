@@ -1,4 +1,3 @@
-// src/components/chat/ChatRoom.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, Modal, ListGroup, Badge, Form } from 'react-bootstrap';
 import { useChat } from '../../contexts/ChatContext';
@@ -22,7 +21,6 @@ const ChatRoom = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Filter users for new chat
   const filteredUsers = users.filter(u =>
     u.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -36,11 +34,6 @@ const ChatRoom = () => {
     } catch (error) {
       console.error('Error starting conversation:', error);
     }
-  };
-
-  const handleNewChatClick = () => {
-    console.log('New chat button clicked'); // Debug log
-    setShowNewChatModal(true);
   };
 
   if (!activeConversation) {
@@ -58,7 +51,7 @@ const ChatRoom = () => {
             </p>
             <Button 
               className="cta-button"
-              onClick={handleNewChatClick}
+              onClick={() => setShowNewChatModal(true)}
             >
               <i className="bi bi-plus-circle-fill"></i>
               Start Your First Chat
@@ -66,7 +59,6 @@ const ChatRoom = () => {
           </div>
         </div>
 
-        {/* New Chat Modal */}
         <Modal 
           show={showNewChatModal} 
           onHide={() => {
@@ -86,22 +78,14 @@ const ChatRoom = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="mb-3"
-              style={{ padding: '0.75rem 1rem' }}
             />
             
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
               <ListGroup>
-                {filteredUsers.length === 0 && searchTerm === '' && (
+                {filteredUsers.length === 0 && (
                   <div className="text-center p-4 text-muted">
                     <i className="bi bi-people" style={{ fontSize: '2rem', marginBottom: '1rem', display: 'block' }}></i>
-                    <p>Loading users...</p>
-                  </div>
-                )}
-                
-                {filteredUsers.length === 0 && searchTerm !== '' && (
-                  <div className="text-center p-4 text-muted">
-                    <i className="bi bi-search" style={{ fontSize: '2rem', marginBottom: '1rem', display: 'block' }}></i>
-                    <p>No users found matching "{searchTerm}"</p>
+                    <p>No users available</p>
                   </div>
                 )}
                 
@@ -110,52 +94,27 @@ const ChatRoom = () => {
                     key={otherUser.uid}
                     action
                     onClick={() => handleStartConversation(otherUser)}
-                    className="d-flex align-items-center"
-                    style={{ 
-                      padding: '1rem',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s ease'
-                    }}
+                    className="d-flex align-items-center user-item"
                   >
                     <img
-                      src={otherUser.photoURL || '/default-avatar.png'}
+                      src={otherUser.photoURL || 'https://via.placeholder.com/50'}
                       alt={otherUser.displayName}
                       className="rounded-circle me-3"
                       width={50}
                       height={50}
-                      style={{ objectFit: 'cover' }}
                     />
                     <div className="flex-grow-1">
-                      <div className="fw-bold" style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>
-                        {otherUser.displayName}
-                      </div>
+                      <div className="fw-bold">{otherUser.displayName}</div>
                       <small className="text-muted">{otherUser.email}</small>
                     </div>
                     {otherUser.isOnline && (
-                      <div className="d-flex align-items-center">
-                        <Badge bg="success" className="me-2">Online</Badge>
-                        <div 
-                          className="bg-success rounded-circle"
-                          style={{ width: '10px', height: '10px' }}
-                        ></div>
-                      </div>
+                      <Badge bg="success">Online</Badge>
                     )}
                   </ListGroup.Item>
                 ))}
               </ListGroup>
             </div>
           </Modal.Body>
-          <Modal.Footer>
-            <Button 
-              variant="secondary" 
-              onClick={() => {
-                setShowNewChatModal(false);
-                setSearchTerm('');
-              }}
-            >
-              Cancel
-            </Button>
-          </Modal.Footer>
         </Modal>
       </>
     );
@@ -168,12 +127,15 @@ const ChatRoom = () => {
     <div className="chat-room">
       <div className="chat-header">
         <div className="chat-info">
-          <button className="back-btn">
+          <button 
+            className="back-btn d-lg-none"
+            onClick={() => window.history.back()}
+          >
             <i className="bi bi-arrow-left"></i>
           </button>
           <div className="avatar">
             <img
-              src={otherUserDetails?.photo || '/default-avatar.png'}
+              src={otherUserDetails?.photo || 'https://via.placeholder.com/44'}
               alt={otherUserDetails?.name}
             />
             <div className="status"></div>
@@ -205,7 +167,7 @@ const ChatRoom = () => {
         ) : (
           <>
             {messages.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+              <div className="empty-messages">
                 <i className="bi bi-chat-dots" style={{ fontSize: '3rem', marginBottom: '1rem', display: 'block' }}></i>
                 <h3>Start the conversation</h3>
                 <p>Send your first message to get things started!</p>

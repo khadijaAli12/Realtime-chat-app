@@ -1,4 +1,3 @@
-// src/contexts/ChatContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   collection, 
@@ -32,23 +31,31 @@ export const ChatProvider = ({ children }) => {
   const [activeConversation, setActiveConversation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
 
-  // Fetch all users for new chat functionality
+  // Fetch all users
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setUsers([]);
+      setUsersLoading(false);
+      return;
+    }
 
-    const fetchUsers = async () => {
-      const usersQuery = query(collection(db, 'users'));
-      const usersSnapshot = await getDocs(usersQuery);
-      const allUsers = usersSnapshot.docs.map(doc => ({
+    const usersQuery = query(collection(db, 'users'));
+    const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+      const allUsers = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })).filter(u => u.uid !== user.uid);
       
       setUsers(allUsers);
-    };
+      setUsersLoading(false);
+    }, (error) => {
+      console.error('Error fetching users:', error);
+      setUsersLoading(false);
+    });
 
-    fetchUsers();
+    return unsubscribe;
   }, [user]);
 
   // Listen to conversations
@@ -57,15 +64,19 @@ export const ChatProvider = ({ children }) => {
 
     const conversationsQuery = query(
       collection(db, 'conversations'),
-      where('participants', 'array-contains', user.uid),
-      orderBy('lastMessageTime', 'desc')
+      where('participants', 'array-contains', user.uid)
     );
 
     const unsubscribe = onSnapshot(conversationsQuery, (snapshot) => {
       const convs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      })).sort((a, b) => {
+        const aTime = a.lastMessageTime?.toDate?.() || new Date(0);
+        const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
+        return bTime - aTime;
+      });
+      
       setConversations(convs);
     });
 
@@ -92,15 +103,11 @@ export const ChatProvider = ({ children }) => {
       }));
       setMessages(msgs);
       setLoading(false);
-      
-      // Mark messages as read
-      markMessagesAsRead();
     });
 
     return unsubscribe;
   }, [activeConversation]);
 
-  // Send message
   const sendMessage = async (text) => {
     if (!user || !activeConversation || !text.trim()) return;
 
@@ -110,37 +117,29 @@ export const ChatProvider = ({ children }) => {
       senderName: user.displayName,
       senderPhoto: user.photoURL || '',
       timestamp: serverTimestamp(),
-      status: 'sent',
-      readBy: [user.uid]
+      status: 'sent'
     };
 
     try {
-      // Add message to conversation
       await addDoc(
         collection(db, 'conversations', activeConversation.id, 'messages'),
         messageData
       );
 
-      // Update conversation last message
       await updateDoc(doc(db, 'conversations', activeConversation.id), {
         lastMessage: text.trim(),
         lastMessageTime: serverTimestamp(),
-        lastMessageSender: user.uid,
-        [`unreadCount.${user.uid}`]: 0,
-        [`unreadCount.${activeConversation.participants.find(p => p !== user.uid)}`]: 
-          (activeConversation.unreadCount?.[activeConversation.participants.find(p => p !== user.uid)] || 0) + 1
+        lastMessageSender: user.uid
       });
     } catch (error) {
       console.error('Error sending message:', error);
     }
   };
 
-  // Start new conversation
   const startConversation = async (otherUser) => {
     if (!user) return;
 
     try {
-      // Check if conversation already exists
       const existingConv = conversations.find(conv =>
         conv.participants.includes(otherUser.uid) && 
         conv.participants.includes(user.uid)
@@ -151,7 +150,6 @@ export const ChatProvider = ({ children }) => {
         return existingConv;
       }
 
-      // Create new conversation
       const conversationData = {
         participants: [user.uid, otherUser.uid],
         participantDetails: {
@@ -167,10 +165,6 @@ export const ChatProvider = ({ children }) => {
         lastMessage: '',
         lastMessageTime: serverTimestamp(),
         lastMessageSender: '',
-        unreadCount: {
-          [user.uid]: 0,
-          [otherUser.uid]: 0
-        },
         createdAt: serverTimestamp()
       };
 
@@ -181,20 +175,7 @@ export const ChatProvider = ({ children }) => {
       return newConversation;
     } catch (error) {
       console.error('Error starting conversation:', error);
-    }
-  };
-
-  // Mark messages as read
-  const markMessagesAsRead = async () => {
-    if (!user || !activeConversation) return;
-
-    try {
-      // Update unread count
-      await updateDoc(doc(db, 'conversations', activeConversation.id), {
-        [`unreadCount.${user.uid}`]: 0
-      });
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
+      throw error;
     }
   };
 
@@ -203,6 +184,7 @@ export const ChatProvider = ({ children }) => {
     messages,
     activeConversation,
     users,
+    usersLoading,
     loading,
     sendMessage,
     startConversation,

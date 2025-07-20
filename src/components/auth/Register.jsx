@@ -1,4 +1,3 @@
-// src/components/auth/Register.jsx
 import React, { useState } from 'react';
 import { Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,7 +25,6 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
-    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -42,7 +40,7 @@ const Register = () => {
     try {
       await signup(formData.email, formData.password, formData.displayName);
     } catch (error) {
-      setError('Failed to create account: ' + error.message);
+      setError(error.message);
     }
     
     setLoading(false);
@@ -55,7 +53,7 @@ const Register = () => {
     try {
       await googleSignIn();
     } catch (error) {
-      setError('Failed to sign up with Google: ' + error.message);
+      setError(error.message);
     }
     
     setLoading(false);
@@ -63,7 +61,7 @@ const Register = () => {
 
   return (
     <>
-      {error && <Alert variant="danger">{error}</Alert>}
+      {error && <Alert variant="danger" className="mb-3">{error}</Alert>}
       
       <Form onSubmit={handleSubmit}>
         <Form.Group className="mb-3">
@@ -74,6 +72,7 @@ const Register = () => {
             value={formData.displayName}
             onChange={handleChange}
             required
+            className="form-input"
           />
         </Form.Group>
 
@@ -85,6 +84,7 @@ const Register = () => {
             value={formData.email}
             onChange={handleChange}
             required
+            className="form-input"
           />
         </Form.Group>
 
@@ -97,6 +97,7 @@ const Register = () => {
             onChange={handleChange}
             minLength="6"
             required
+            className="form-input"
           />
         </Form.Group>
 
@@ -109,27 +110,30 @@ const Register = () => {
             onChange={handleChange}
             minLength="6"
             required
+            className="form-input"
           />
         </Form.Group>
 
         <Button 
           variant="primary" 
           type="submit" 
-          className="w-100 mb-2"
+          className="w-100 mb-3 auth-btn"
           disabled={loading}
         >
-          {loading ? <Spinner size="sm" /> : 'Create Account'}
+          {loading ? <Spinner size="sm" className="me-2" /> : null}
+          Create Account
         </Button>
       </Form>
 
-      <hr />
+      <hr className="my-3" />
 
       <Button 
         variant="outline-primary" 
-        className="w-100"
+        className="w-100 google-btn"
         onClick={handleGoogleSignUp}
         disabled={loading}
       >
+        <i className="bi bi-google me-2"></i>
         Sign up with Google
       </Button>
     </>
