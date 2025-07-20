@@ -1,6 +1,6 @@
 // src/components/chat/ConversationList.jsx
 import React, { useState } from 'react';
-import { Button, Modal, Form, ListGroup, Badge, Alert } from 'react-bootstrap';
+import { Button, Modal, Form, ListGroup, Badge, Alert, Nav } from 'react-bootstrap';
 import { useChat } from '../../contexts/ChatContext';
 import { useAuth } from '../../contexts/AuthContext';
 import ConversationCard from './ConversationCard';
@@ -8,23 +8,33 @@ import SearchInput from '../ui/SearchInput';
 import ProfileImage from '../profile/ProfileImage';
 
 const ConversationList = ({ onChatSelect }) => {
-  const { conversations, users, startConversation, usersLoading, usersError } = useChat();
+  const { 
+    conversations, 
+    archivedConversations,
+    users, 
+    startConversation, 
+    usersLoading, 
+    usersError,
+    showArchived,
+    setShowArchived,
+    unarchiveConversation
+  } = useChat();
   const { user } = useAuth();
   const [showNewChat, setShowNewChat] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
 
-  // Debug logs
-  React.useEffect(() => {
-    console.log('ConversationList - Users:', users);
-    console.log('ConversationList - Users loading:', usersLoading);
-    console.log('ConversationList - Users error:', usersError);
-  }, [users, usersLoading, usersError]);
-
   const filteredUsers = users.filter(u =>
     u.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const filteredConversations = (showArchived ? archivedConversations : conversations).filter(conv => {
+    const otherParticipant = conv.participants.find(p => p !== user.uid);
+    const otherUserDetails = conv.participantDetails?.[otherParticipant];
+    return otherUserDetails?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           conv.lastMessage?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const handleStartConversation = async (otherUser) => {
     console.log('Starting conversation with:', otherUser);
@@ -42,8 +52,6 @@ const ConversationList = ({ onChatSelect }) => {
   };
 
   const handleNewChatClick = () => {
-    console.log('New chat clicked - Users available:', users.length);
-    console.log('Current users:', users);
     setError('');
     setShowNewChat(true);
   };
@@ -52,6 +60,15 @@ const ConversationList = ({ onChatSelect }) => {
     setShowNewChat(false);
     setSearchTerm('');
     setError('');
+  };
+
+  const handleUnarchive = async (conversationId) => {
+    try {
+      await unarchiveConversation(conversationId);
+    } catch (error) {
+      console.error('Error unarchiving conversation:', error);
+      setError('Failed to unarchive conversation');
+    }
   };
 
   return (
@@ -69,32 +86,69 @@ const ConversationList = ({ onChatSelect }) => {
         </div>
         
         <SearchInput 
-          placeholder="Search conversations..." 
+          placeholder={showArchived ? "Search archived..." : "Search conversations..."} 
           value={searchTerm}
           onChange={setSearchTerm}
         />
+
+        {/* Archive Toggle Navigation */}
+        <Nav variant="pills" className="archive-nav mt-3">
+          <Nav.Item>
+            <Nav.Link 
+              active={!showArchived} 
+              onClick={() => setShowArchived(false)}
+              className="archive-tab"
+            >
+              <i className="bi bi-chat-dots me-2"></i>
+              Active ({conversations.length})
+            </Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link 
+              active={showArchived} 
+              onClick={() => setShowArchived(true)}
+              className="archive-tab"
+            >
+              <i className="bi bi-archive me-2"></i>
+              Archived ({archivedConversations.length})
+            </Nav.Link>
+          </Nav.Item>
+        </Nav>
       </div>
 
       <div className="conversations-list">
-        {conversations.length === 0 ? (
+        {filteredConversations.length === 0 ? (
           <div className="empty-state">
-            <i className="bi bi-chat-dots empty-icon"></i>
-            <h3>No conversations yet</h3>
-            <p>Start a new chat to begin messaging.</p>
+            <i className={`bi ${showArchived ? 'bi-archive' : 'bi-chat-dots'} empty-icon`}></i>
+            <h3>{showArchived ? 'No archived chats' : 'No conversations yet'}</h3>
+            <p>
+              {showArchived 
+                ? 'Archived conversations will appear here.'
+                : 'Start a new chat to begin messaging.'
+              }
+            </p>
+            {!showArchived && (
+              <Button variant="primary" onClick={handleNewChatClick} className="mt-2">
+                <i className="bi bi-plus-circle me-2"></i>
+                Start New Chat
+              </Button>
+            )}
           </div>
         ) : (
-          conversations.map(conversation => (
+          filteredConversations.map(conversation => (
             <ConversationCard 
               key={conversation.id} 
               conversation={conversation}
               currentUser={user}
               onClick={onChatSelect}
+              isArchived={showArchived}
+              onUnarchive={() => handleUnarchive(conversation.id)}
             />
           ))
         )}
       </div>
 
-      {/* Enhanced New Chat Modal - Same as ChatRoom */}
+      {/* New Chat Modal */}
       <Modal 
         show={showNewChat} 
         onHide={handleModalClose}
@@ -102,13 +156,13 @@ const ConversationList = ({ onChatSelect }) => {
         centered
         className="new-chat-modal"
       >
-        <Modal.Header closeButton className="modal-header-modern">
+        <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-chat-plus-fill me-2 text-primary"></i>
             Start New Conversation
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body className="modal-body-modern">
+        <Modal.Body>
           {error && (
             <Alert variant="danger" className="d-flex align-items-center mb-3">
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
@@ -123,47 +177,22 @@ const ConversationList = ({ onChatSelect }) => {
             </Alert>
           )}
           
-          {/* Enhanced Search Input */}
-          <div className="search-container mb-4">
-            <div className="search-input-wrapper">
-              <i className="bi bi-search search-icon-modal"></i>
-              <Form.Control
-                type="text"
-                placeholder="Search users by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input-modal"
-              />
-              {searchTerm && (
-                <button 
-                  className="clear-search-btn"
-                  onClick={() => setSearchTerm('')}
-                >
-                  <i className="bi bi-x"></i>
-                </button>
-              )}
-            </div>
-          </div>
+          <Form.Control
+            type="text"
+            placeholder="Search users by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="mb-3"
+          />
           
-          {/* Debug Info */}
-          <div className="debug-info mb-3">
-            <small className="text-muted">
-              <i className="bi bi-info-circle me-1"></i>
-              {usersLoading ? 'Loading users...' : `${users.length} users available`}
-            </small>
-          </div>
-          
-          {/* Users List with ProfileImage */}
-          <div className="users-list-container">
+          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
             {usersLoading ? (
-              <div className="loading-state text-center py-4">
-                <div className="spinner-border text-primary mb-3" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
+              <div className="text-center py-4">
+                <div className="spinner-border text-primary mb-3"></div>
                 <p>Finding amazing people to chat with...</p>
               </div>
             ) : filteredUsers.length === 0 ? (
-              <div className="empty-users-state text-center py-4">
+              <div className="text-center py-4">
                 {users.length === 0 ? (
                   <>
                     <div className="empty-icon mb-3">
@@ -171,15 +200,6 @@ const ConversationList = ({ onChatSelect }) => {
                     </div>
                     <h5>No other users found</h5>
                     <p>Invite friends to join ChatApp and start conversations!</p>
-                    <details className="text-start mt-3">
-                      <summary>Debug Info</summary>
-                      <small>
-                        <br />Current user: {user?.displayName} ({user?.uid})
-                        <br />Users in database: {users.length}
-                        <br />Users error: {usersError || 'None'}
-                        <br />Search term: "{searchTerm}"
-                      </small>
-                    </details>
                   </>
                 ) : (
                   <>
@@ -188,7 +208,6 @@ const ConversationList = ({ onChatSelect }) => {
                     </div>
                     <h5>No users found</h5>
                     <p>No users match your search "{searchTerm}"</p>
-                    <small className="text-muted">Try a different search term</small>
                   </>
                 )}
               </div>
@@ -200,38 +219,29 @@ const ConversationList = ({ onChatSelect }) => {
                     className="user-list-item"
                     onClick={() => handleStartConversation(otherUser)}
                   >
-                    <div className="user-avatar-section">
-                      <ProfileImage 
-                        src={otherUser.photoURL} 
-                        name={otherUser.displayName || otherUser.email}
-                        size={56} 
-                        isOnline={otherUser.isOnline}
-                        showInitials={true}
-                        className="user-modal-avatar"
-                      />
+                    <ProfileImage 
+                      src={otherUser.photoURL} 
+                      name={otherUser.displayName || otherUser.email}
+                      size={50} 
+                      isOnline={otherUser.isOnline}
+                      showInitials={true}
+                      className="me-3"
+                    />
+                    
+                    <div className="flex-grow-1">
+                      <div className="user-name">{otherUser.displayName || 'Unknown User'}</div>
+                      <div className="user-email">{otherUser.email}</div>
                     </div>
                     
-                    <div className="user-info-section">
-                      <div className="user-name-primary">
-                        {otherUser.displayName || 'Unknown User'}
-                      </div>
-                      <div className="user-email-secondary">
-                        {otherUser.email}
-                      </div>
-                    </div>
-                    
-                    <div className="user-status-section">
+                    <div className="user-status">
                       {otherUser.isOnline ? (
-                        <Badge bg="success" className="status-badge-online">
+                        <Badge bg="success">
                           <i className="bi bi-circle-fill me-1"></i>
                           Online
                         </Badge>
                       ) : (
-                        <Badge bg="secondary" className="status-badge-offline">
-                          Offline
-                        </Badge>
+                        <Badge bg="secondary">Offline</Badge>
                       )}
-                      <i className="bi bi-chevron-right text-muted ms-2"></i>
                     </div>
                   </div>
                 ))}
@@ -239,13 +249,8 @@ const ConversationList = ({ onChatSelect }) => {
             )}
           </div>
         </Modal.Body>
-        <Modal.Footer className="modal-footer-modern">
-          <Button 
-            variant="outline-secondary" 
-            onClick={handleModalClose}
-            className="d-flex align-items-center"
-          >
-            <i className="bi bi-x-circle me-2"></i>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={handleModalClose}>
             Cancel
           </Button>
         </Modal.Footer>

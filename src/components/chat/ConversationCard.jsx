@@ -7,8 +7,20 @@ import { doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import ProfileImage from '../profile/ProfileImage';
 
-const ConversationCard = ({ conversation, currentUser, onClick }) => {
-  const { setActiveConversation, activeConversation, markMessagesAsRead } = useChat();
+const ConversationCard = ({ 
+  conversation, 
+  currentUser, 
+  onClick, 
+  isArchived = false,
+  onUnarchive 
+}) => {
+  const { 
+    setActiveConversation, 
+    activeConversation, 
+    markMessagesAsRead,
+    archiveConversation,
+    unarchiveConversation 
+  } = useChat();
   const [showOptions, setShowOptions] = useState(false);
   
   const otherParticipant = conversation.participants.find(p => p !== currentUser.uid);
@@ -61,11 +73,13 @@ const ConversationCard = ({ conversation, currentUser, onClick }) => {
   const isActive = activeConversation?.id === conversation.id;
 
   const handleClick = async () => {
-    setActiveConversation(conversation);
-    onClick?.();
-    
-    if (unreadCount > 0) {
-      await markMessagesAsRead(conversation.id);
+    if (!isArchived) {
+      setActiveConversation(conversation);
+      onClick?.();
+      
+      if (unreadCount > 0) {
+        await markMessagesAsRead(conversation.id);
+      }
     }
   };
 
@@ -86,27 +100,39 @@ const ConversationCard = ({ conversation, currentUser, onClick }) => {
     }
   };
 
-  const handleMuteConversation = () => {
-    alert('Mute functionality coming soon!');
+  const handleArchiveConversation = async () => {
+    try {
+      await archiveConversation(conversation.id);
+      alert('Conversation archived');
+    } catch (error) {
+      console.error('Error archiving conversation:', error);
+      alert('Failed to archive conversation. Please try again.');
+    }
   };
 
-  const handleArchiveConversation = () => {
-    alert('Archive functionality coming soon!');
+  const handleUnarchiveConversation = async () => {
+    try {
+      await unarchiveConversation(conversation.id);
+      onUnarchive?.();
+      alert('Conversation unarchived');
+    } catch (error) {
+      console.error('Error unarchiving conversation:', error);
+      alert('Failed to unarchive conversation. Please try again.');
+    }
   };
 
   return (
     <div 
-      className={`conversation-item ${isActive ? 'active' : ''}`}
+      className={`conversation-item ${isActive ? 'active' : ''} ${isArchived ? 'archived' : ''}`}
       onMouseEnter={() => setShowOptions(true)}
       onMouseLeave={() => setShowOptions(false)}
     >
       <div className="conversation-content" onClick={handleClick}>
-        {/* Single ProfileImage Component */}
         <ProfileImage 
           src={otherUserDetails?.photo} 
           name={otherUserDetails?.name}
           size={52} 
-          isOnline={true}
+          isOnline={!isArchived}
           showInitials={true}
           className="conversation-avatar me-3"
         />
@@ -115,6 +141,7 @@ const ConversationCard = ({ conversation, currentUser, onClick }) => {
           <div className="top-row">
             <div className="name" title={otherUserDetails?.name || 'Unknown User'}>
               {otherUserDetails?.name || 'Unknown User'}
+              {isArchived && <i className="bi bi-archive-fill ms-2 text-muted"></i>}
             </div>
             <div className="time">
               {formatTime(conversation.lastMessageTime)}
@@ -126,13 +153,13 @@ const ConversationCard = ({ conversation, currentUser, onClick }) => {
               {getLastMessageDisplay()}
             </div>
             
-            {unreadCount > 0 && (
+            {!isArchived && unreadCount > 0 && (
               <Badge bg="primary" className="unread-count">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </Badge>
             )}
             
-            {conversation.lastMessageSender === currentUser.uid && conversation.lastMessage && (
+            {!isArchived && conversation.lastMessageSender === currentUser.uid && conversation.lastMessage && (
               <div className="message-status">
                 <i className="bi bi-check-all text-muted"></i>
               </div>
@@ -153,22 +180,30 @@ const ConversationCard = ({ conversation, currentUser, onClick }) => {
             </Dropdown.Toggle>
 
             <Dropdown.Menu className="conversation-options-menu">
-              <Dropdown.Item onClick={() => markMessagesAsRead(conversation.id)}>
-                <i className="bi bi-check2-all me-2"></i>
-                Mark as Read
-              </Dropdown.Item>
-              
-              <Dropdown.Item onClick={handleMuteConversation}>
-                <i className="bi bi-bell-slash me-2"></i>
-                Mute Conversation
-              </Dropdown.Item>
-              
-              <Dropdown.Item onClick={handleArchiveConversation}>
-                <i className="bi bi-archive me-2"></i>
-                Archive Chat
-              </Dropdown.Item>
-              
-              <Dropdown.Divider />
+              {!isArchived ? (
+                <>
+                  <Dropdown.Item onClick={() => markMessagesAsRead(conversation.id)}>
+                    <i className="bi bi-check2-all me-2"></i>
+                    Mark as Read
+                  </Dropdown.Item>
+                  
+                  <Dropdown.Item onClick={handleArchiveConversation}>
+                    <i className="bi bi-archive me-2"></i>
+                    Archive Chat
+                  </Dropdown.Item>
+                  
+                  <Dropdown.Divider />
+                </>
+              ) : (
+                <>
+                  <Dropdown.Item onClick={handleUnarchiveConversation}>
+                    <i className="bi bi-archive me-2"></i>
+                    Unarchive Chat
+                  </Dropdown.Item>
+                  
+                  <Dropdown.Divider />
+                </>
+              )}
               
               <Dropdown.Item 
                 onClick={handleDeleteConversation}
@@ -182,8 +217,8 @@ const ConversationCard = ({ conversation, currentUser, onClick }) => {
         </div>
       )}
 
-      {isActive && <div className="active-indicator" />}
-      {unreadCount > 0 && !isActive && <div className="new-message-indicator" />}
+      {isActive && !isArchived && <div className="active-indicator" />}
+      {!isArchived && unreadCount > 0 && !isActive && <div className="new-message-indicator" />}
     </div>
   );
 };

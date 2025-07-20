@@ -29,12 +29,14 @@ export const useChat = () => {
 export const ChatProvider = ({ children }) => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
+  const [archivedConversations, setArchivedConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   // Fetch all users
   useEffect(() => {
@@ -73,7 +75,7 @@ export const ChatProvider = ({ children }) => {
     return unsubscribe;
   }, [user]);
 
-  // Listen to conversations
+  // Listen to conversations (both active and archived)
   useEffect(() => {
     if (!user) return;
 
@@ -83,7 +85,7 @@ export const ChatProvider = ({ children }) => {
     );
 
     const unsubscribe = onSnapshot(conversationsQuery, (snapshot) => {
-      const convs = snapshot.docs.map(doc => ({
+      const allConversations = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })).sort((a, b) => {
@@ -91,8 +93,17 @@ export const ChatProvider = ({ children }) => {
         const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
         return bTime - aTime;
       });
+
+      // Separate archived and active conversations
+      const active = allConversations.filter(conv => 
+        !conv.archivedBy || !conv.archivedBy[user.uid]
+      );
+      const archived = allConversations.filter(conv => 
+        conv.archivedBy && conv.archivedBy[user.uid]
+      );
       
-      setConversations(convs);
+      setConversations(active);
+      setArchivedConversations(archived);
     });
 
     return unsubscribe;
@@ -159,7 +170,6 @@ export const ChatProvider = ({ children }) => {
     try {
       const messageRef = doc(db, 'conversations', activeConversation.id, 'messages', messageId);
       
-      // Mark message as deleted instead of actually deleting it
       await updateDoc(messageRef, {
         isDeleted: true,
         deletedAt: serverTimestamp(),
@@ -168,10 +178,8 @@ export const ChatProvider = ({ children }) => {
         text: ''
       });
 
-      // Update last message if this was the latest one
       const latestMessage = messages[messages.length - 1];
       if (latestMessage?.id === messageId) {
-        // Find the previous non-deleted message
         const previousMessage = messages
           .slice(0, -1)
           .reverse()
@@ -210,16 +218,61 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const archiveConversation = async (conversationId) => {
+    if (!user || !conversationId) return;
+
+    try {
+      const conversationRef = doc(db, 'conversations', conversationId);
+      await updateDoc(conversationRef, {
+        [`archivedBy.${user.uid}`]: true,
+        [`archivedAt.${user.uid}`]: serverTimestamp()
+      });
+
+      // If this is the active conversation, clear it
+      if (activeConversation?.id === conversationId) {
+        setActiveConversation(null);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error archiving conversation:', error);
+      throw error;
+    }
+  };
+
+  const unarchiveConversation = async (conversationId) => {
+    if (!user || !conversationId) return;
+
+    try {
+      const conversationRef = doc(db, 'conversations', conversationId);
+      await updateDoc(conversationRef, {
+        [`archivedBy.${user.uid}`]: false,
+        [`unarchivedAt.${user.uid}`]: serverTimestamp()
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error unarchiving conversation:', error);
+      throw error;
+    }
+  };
+
   const startConversation = async (otherUser) => {
     if (!user) return;
 
     try {
-      const existingConv = conversations.find(conv =>
+      // Check in both active and archived conversations
+      const allConversations = [...conversations, ...archivedConversations];
+      const existingConv = allConversations.find(conv =>
         conv.participants.includes(otherUser.uid) && 
         conv.participants.includes(user.uid)
       );
 
       if (existingConv) {
+        // If conversation was archived, unarchive it
+        if (existingConv.archivedBy && existingConv.archivedBy[user.uid]) {
+          await unarchiveConversation(existingConv.id);
+        }
         setActiveConversation(existingConv);
         return existingConv;
       }
@@ -239,7 +292,9 @@ export const ChatProvider = ({ children }) => {
         lastMessage: '',
         lastMessageTime: serverTimestamp(),
         lastMessageSender: '',
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        archivedBy: {},
+        mutedBy: {}
       };
 
       const docRef = await addDoc(collection(db, 'conversations'), conversationData);
@@ -253,13 +308,10 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  // Mark messages as read
   const markMessagesAsRead = async (conversationId) => {
     if (!user || !conversationId) return;
 
     try {
-      // This could be expanded to mark individual messages as read
-      // For now, we'll just update conversation level read status
       const conversationRef = doc(db, 'conversations', conversationId);
       await updateDoc(conversationRef, {
         [`readBy.${user.uid}`]: serverTimestamp()
@@ -271,15 +323,20 @@ export const ChatProvider = ({ children }) => {
 
   const value = {
     conversations,
+    archivedConversations,
     messages,
     activeConversation,
     users,
     usersLoading,
     usersError,
     loading,
+    showArchived,
+    setShowArchived,
     sendMessage,
     deleteMessage,
     permanentlyDeleteMessage,
+    archiveConversation,
+    unarchiveConversation,
     startConversation,
     setActiveConversation,
     markMessagesAsRead

@@ -1,3 +1,4 @@
+// src/components/layout/Header.jsx
 import React, { useState } from 'react';
 import { Navbar, Nav, Dropdown } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
@@ -59,10 +60,6 @@ const Header = ({ onMenuClick }) => {
                   <Dropdown.Item onClick={() => setShowProfile(true)}>
                     <i className="bi bi-person me-2"></i>
                     Profile
-                  </Dropdown.Item>
-                  <Dropdown.Item>
-                    <i className="bi bi-gear me-2"></i>
-                    Settings
                   </Dropdown.Item>
                   <Dropdown.Divider />
                   <Dropdown.Item onClick={handleLogout}>
