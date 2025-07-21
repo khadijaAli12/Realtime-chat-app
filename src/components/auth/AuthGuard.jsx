@@ -28,7 +28,7 @@ const AuthGuard = ({ children }) => {
                   <div className="text-center mb-3">
                     <h3 className="auth-brand">
                       <i className="bi bi-chat-dots-fill me-2"></i>
-                      ChatApp
+                     Eloquent
                     </h3>
                   </div>
                   <Nav variant="pills" className="justify-content-center">

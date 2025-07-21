@@ -172,7 +172,9 @@ const ChatRoom = () => {
         <div className="welcome-screen">
           <div className="welcome-content">
             <div className="welcome-icon">
-              <i className="bi bi-chat-heart-fill"></i>
+            <i className="bi bi-chat-dots-fill"></i>
+
+              {/* <i className="bi bi-chat-heart-fill"></i> */}
             </div>
             <h1>Welcome to Eloquent!</h1>
             <p>
