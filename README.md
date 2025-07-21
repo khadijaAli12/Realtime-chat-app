@@ -36,11 +36,3 @@ Check out the live deployed app here:
 - **Bootstrap** – for responsive, clean UI components
 
 ---
-
-## 📸 Screenshots
-
-> Add screenshots of your app here (Login page, Chat interface, Mobile view)
-
----
-
-
