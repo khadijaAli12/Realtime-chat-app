@@ -1,6 +1,6 @@
 // src/components/chat/ConversationList.jsx
 import React, { useState } from 'react';
-import { Button, Modal, Form, ListGroup, Badge, Alert, Nav } from 'react-bootstrap';
+import { Button, Modal, Form, Badge, Alert, Nav } from 'react-bootstrap';
 import { useChat } from '../../contexts/ChatContext';
 import { useAuth } from '../../contexts/AuthContext';
 import ConversationCard from './ConversationCard';
@@ -37,9 +37,7 @@ const ConversationList = ({ onChatSelect }) => {
   });
 
   const handleStartConversation = async (otherUser) => {
-    console.log('Starting conversation with:', otherUser);
     setError('');
-    
     try {
       await startConversation(otherUser);
       setShowNewChat(false);
@@ -199,7 +197,7 @@ const ConversationList = ({ onChatSelect }) => {
                       <i className="bi bi-people-fill"></i>
                     </div>
                     <h5>No other users found</h5>
-                    <p>Invite friends to join ChatApp and start conversations!</p>
+                    <p>Invite friends to join Eloquent and start conversations!</p>
                   </>
                 ) : (
                   <>

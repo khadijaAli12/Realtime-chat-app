@@ -134,33 +134,71 @@ export const ChatProvider = ({ children }) => {
     return unsubscribe;
   }, [activeConversation]);
 
-  const sendMessage = async (text) => {
-    if (!user || !activeConversation || !text.trim()) return;
-
-    const messageData = {
-      text: text.trim(),
-      senderId: user.uid,
-      senderName: user.displayName,
-      senderPhoto: user.photoURL || '',
-      timestamp: serverTimestamp(),
-      status: 'sent',
-      isDeleted: false
-    };
+  // FIXED: Updated sendMessage to handle both string and object inputs
+  const sendMessage = async (messageInput) => {
+    if (!user || !activeConversation) {
+      throw new Error('No user or active conversation');
+    }
 
     try {
+      // Handle both string and object inputs
+      let messageText, replyTo;
+      
+      if (typeof messageInput === 'string') {
+        messageText = messageInput;
+        replyTo = null;
+      } else if (typeof messageInput === 'object' && messageInput.text) {
+        messageText = messageInput.text;
+        replyTo = messageInput.replyTo || null;
+      } else {
+        throw new Error('Invalid message format');
+      }
+
+      if (!messageText || !messageText.trim()) {
+        throw new Error('Message text cannot be empty');
+      }
+
+      // Create base message data
+      const messageData = {
+        text: messageText.trim(),
+        senderId: user.uid,
+        senderName: user.displayName || user.email || 'Unknown User',
+        senderPhoto: user.photoURL || '',
+        timestamp: serverTimestamp(),
+        status: 'sent',
+        isDeleted: false,
+        read: false
+      };
+
+      // Add reply data if present
+      if (replyTo) {
+        messageData.replyTo = {
+          id: replyTo.id,
+          text: replyTo.text,
+          senderName: replyTo.senderName,
+          senderId: replyTo.senderId
+        };
+      }
+
+      console.log('Sending message:', messageData);
+
+      // Add message to Firestore
       await addDoc(
         collection(db, 'conversations', activeConversation.id, 'messages'),
         messageData
       );
 
+      // Update conversation last message
       await updateDoc(doc(db, 'conversations', activeConversation.id), {
-        lastMessage: text.trim(),
+        lastMessage: messageText.trim(),
         lastMessageTime: serverTimestamp(),
         lastMessageSender: user.uid
       });
+
+      console.log('Message sent successfully');
     } catch (error) {
       console.error('Error sending message:', error);
-      throw error;
+      throw new Error(`Failed to send message: ${error.message}`);
     }
   };
 
@@ -175,7 +213,7 @@ export const ChatProvider = ({ children }) => {
         deletedAt: serverTimestamp(),
         deletedBy: user.uid,
         originalText: messages.find(m => m.id === messageId)?.text || '',
-        text: ''
+        text: 'This message was deleted'
       });
 
       const latestMessage = messages[messages.length - 1];
@@ -199,7 +237,6 @@ export const ChatProvider = ({ children }) => {
           });
         }
       }
-
     } catch (error) {
       console.error('Error deleting message:', error);
       throw error;
@@ -258,7 +295,9 @@ export const ChatProvider = ({ children }) => {
   };
 
   const startConversation = async (otherUser) => {
-    if (!user) return;
+    if (!user) {
+      throw new Error('No authenticated user');
+    }
 
     try {
       // Check in both active and archived conversations
@@ -277,15 +316,16 @@ export const ChatProvider = ({ children }) => {
         return existingConv;
       }
 
+      // Create new conversation
       const conversationData = {
         participants: [user.uid, otherUser.uid],
         participantDetails: {
           [user.uid]: {
-            name: user.displayName,
+            name: user.displayName || user.email || 'Unknown User',
             photo: user.photoURL || ''
           },
           [otherUser.uid]: {
-            name: otherUser.displayName,
+            name: otherUser.displayName || otherUser.email || 'Unknown User',
             photo: otherUser.photoURL || ''
           }
         },
@@ -297,6 +337,8 @@ export const ChatProvider = ({ children }) => {
         mutedBy: {}
       };
 
+      console.log('Creating new conversation:', conversationData);
+
       const docRef = await addDoc(collection(db, 'conversations'), conversationData);
       const newConversation = { id: docRef.id, ...conversationData };
       
@@ -304,7 +346,7 @@ export const ChatProvider = ({ children }) => {
       return newConversation;
     } catch (error) {
       console.error('Error starting conversation:', error);
-      throw error;
+      throw new Error(`Failed to start conversation: ${error.message}`);
     }
   };
 

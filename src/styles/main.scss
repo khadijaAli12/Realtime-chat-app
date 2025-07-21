@@ -3,15 +3,14 @@
 
 // Professional Color System
 :root {
-  // Primary Colors
-  --primary: #4f46e5;
-  --primary-dark: #3730a3;
-  --primary-light: #6366f1;
-  --primary-50: #eef2ff;
-  --primary-100: #e0e7ff;
-  --primary-500: #6366f1;
-  --primary-600: #4f46e5;
-  --primary-700: #3730a3;
+  --primary: #2d3748;
+  --primary-dark: #1a202c;
+  --primary-light: #4a5568;
+  --primary-50: #f7fafc;
+  --primary-100: #edf2f7;
+  --primary-500: #4a5568;
+  --primary-600: #2d3748;
+  --primary-700: #1a202c;
   
   // Neutral Palette
   --white: #ffffff;
@@ -3341,4 +3340,91 @@ select:focus {
       opacity: 0.8;
     }
   }
+}
+.message-bubble {
+  margin-bottom: 1rem;
+
+  .message-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .message-options {
+    margin: 0;
+  }
+
+  .bubble {
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 8px 12px;
+    max-width: calc(100% - 40px);
+    word-wrap: break-word;
+  }
+
+  &.own .bubble {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-light));
+    color: #fff;
+  }
+
+  .message-avatar {
+    margin-bottom: 6px;
+    margin-right: 6px;
+  }
+
+  .reply-reference {
+    background: rgba(27, 67, 50, 0.1);
+    border-left: 3px solid var(--primary-600);
+    border-radius: var(--radius-md);
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-style: italic;
+    margin-bottom: 12px;
+
+    .reply-sender {
+      font-weight: 600;
+      color: var(--primary-600);
+      margin-bottom: 4px;
+    }
+
+    .reply-text {
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .message-text {
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  .message-time {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .message-status i {
+    font-size: 0.75rem;
+  }
+}
+.options-btn::after,
+.dropdown-toggle::after {
+  display: none !important;
+}
+
+/* Hide Bootstrap default caret in this button */
+.options-btn::after, .dropdown-toggle::after {
+  display: none !important;
+}
+.options-btn::after,
+.dropdown-toggle::after {
+  display: none !important;
 }

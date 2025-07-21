@@ -33,7 +33,7 @@ const Header = ({ onMenuClick }) => {
               <div className="brand-icon">
                 <i className="bi bi-chat-dots-fill"></i>
               </div>
-              <span>ChatApp</span>
+              <span>Eloquent</span>
             </Navbar.Brand>
           </div>
           

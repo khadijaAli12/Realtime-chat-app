@@ -1,3 +1,4 @@
+// src/components/ui/SearchInput.jsx
 import React from 'react';
 
 const SearchInput = ({ 

@@ -10,11 +10,12 @@ const ProfileImage = ({
   name = '',
   showInitials = true 
 }) => {
-  const [hasError, setHasError] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const generateInitialAvatar = (displayName) => {
     if (!displayName || !displayName.trim()) {
-      return `https://ui-avatars.com/api/?name=User&size=${size * 2}&background=6b7280&color=ffffff&font-size=0.5`;
+      // Theme color background for default user
+      return `https://ui-avatars.com/api/?name=User&size=${size * 2}&background=1b4332&color=ffffff&font-size=0.5&bold=true&format=png`;
     }
     
     const nameParts = displayName.trim().split(' ');
@@ -28,52 +29,65 @@ const ProfileImage = ({
       initials = nameParts[0].charAt(0).toUpperCase();
     }
     
-    // Force initial avatar generation
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&size=${size * 2}&background=4f46e5&color=ffffff&font-size=0.5&bold=true&format=png`;
+    // Generate different shades of the theme color for variety
+    const themeColors = [
+      '1b4332', // Primary dark forest green
+      '2d5a3f', // Lighter forest green
+      '40916c', // Medium green
+      '52b788', // Light green
+      '74c69d', // Very light green
+      '2f4f4f', // Dark slate gray
+      '556b2f', // Dark olive green
+      '6b8e23', // Olive drab
+      '228b22', // Forest green
+      '32cd32', // Lime green
+      '20b2aa', // Light sea green
+      '008b8b', // Dark cyan
+      '4682b4', // Steel blue (for variety)
+      '6a5acd', // Slate blue (for variety)
+      '8fbc8f'  // Dark sea green
+    ];
+    
+    // Generate consistent color based on name
+    let hash = 0;
+    for (let i = 0; i < displayName.length; i++) {
+      hash = displayName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const colorIndex = Math.abs(hash) % themeColors.length;
+    const backgroundColor = themeColors[colorIndex];
+    
+    // Use ui-avatars.com with theme colors
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&size=${size * 2}&background=${backgroundColor}&color=ffffff&font-size=0.5&bold=true&format=png`;
   };
 
-  const shouldUseInitials = () => {
+  const shouldShowInitials = () => {
     return (
-      hasError || 
+      imageError || 
       !src || 
       src === '' || 
       src === null || 
       src === undefined ||
       src.includes('placeholder') ||
-      src.includes('via.placeholder') ||
-      src.includes('default-avatar')
+      src.includes('via.placeholder')
     );
   };
 
   const getImageSrc = () => {
-    if (shouldUseInitials() && showInitials && name && name.trim()) {
+    if (shouldShowInitials() && showInitials && name) {
       return generateInitialAvatar(name);
     }
     
-    if (src && !shouldUseInitials()) {
+    if (src && !shouldShowInitials()) {
       return src;
     }
     
-    // Fallback
+    // Final fallback with theme color
     return generateInitialAvatar(name || 'User');
   };
 
-  const handleImageError = (e) => {
-    console.log('Image error for:', src, 'falling back to initials for:', name);
-    setHasError(true);
-    
-    if (showInitials && name && name.trim()) {
-      e.target.src = generateInitialAvatar(name);
-    } else {
-      e.target.src = `https://ui-avatars.com/api/?name=User&size=${size * 2}&background=6b7280&color=ffffff&font-size=0.5`;
-    }
-  };
-
-  const handleImageLoad = () => {
-    // Reset error state if image loads successfully
-    if (hasError && src && !src.includes('ui-avatars.com')) {
-      setHasError(false);
-    }
+  const handleImageError = () => {
+    console.log('Image error for:', src, 'showing initials for:', name);
+    setImageError(true);
   };
 
   return (
@@ -96,10 +110,10 @@ const ProfileImage = ({
           borderRadius: '50%',
           objectFit: 'cover',
           border: '2px solid var(--border-light)',
-          display: 'block'
+          display: 'block',
+          transition: 'all 0.3s ease'
         }}
         onError={handleImageError}
-        onLoad={handleImageLoad}
         loading="lazy"
       />
       {isOnline && (
@@ -114,7 +128,8 @@ const ProfileImage = ({
             backgroundColor: '#10b981',
             border: '2px solid white',
             borderRadius: '50%',
-            zIndex: 1
+            zIndex: 1,
+            animation: 'statusPulse 2s infinite'
           }}
         />
       )}
